@@ -13,14 +13,14 @@
   },
   "target": {
     "standard": "AVE",
-    "version": "1.1.0",
+    "version": "1.3.0",
     "url": "https://aveproject.org",
     "record_count": 89,
     "static_record_count": 61,
-    "commit": "8b1f2300c1ee34789aae70e67efb62e898555d4b"
+    "commit": "647e1ce2fff39b26957b8f232a42ab3117f5c2ec"
   },
-  "generated": "2026-11-10",
-  "note": "cfgaudit is a static auditor of committable AI-agent CONFIGURATION files. It does not connect to running servers or observe runtime, so it maps only to AVE's static_detection records. Each cfgaudit rule emits its primary AVE id in JSON/SARIF output (see github.com/cfgaudit/cfgaudit/blob/main/docs/cfgaudit-to-ave.md). Mappings are class-level behavioral equivalence, not asserted identity. cfgaudit maps 74 config-surface rules onto 30 AVE behavioral classes. This revision covers cfgaudit v1.21.0, which added thirteen rules, CFG124 to CFG136, and retired CFG017 (it reported an MCP key no agent reads; it was not mapped). Seven new rules are mapped: CFG125 (a command line that turns off a child agent's approval controls) to AVE-2026-00063; CFG127 (an MCP server run from a hidden folder in the home directory) to AVE-2026-00055; CFG129 (a committed .pyc that runs instead of its source) to AVE-2026-00075, a class new to this crosswalk, partial; CFG134 (pi project packages and extensions) and CFG136 (a Claude Code plugin hooks module, measured to run at session start) to AVE-2026-00064; CFG131 to AVE-2026-00073 and CFG132 to AVE-2026-00001, each on one half of the rule. Six are unmapped: CFG133 joins 'sandbox weakening in config'; CFG135 joins 'a committed path that makes the agent read a file on the reader's machine'; CFG124, CFG126 with CFG128, and CFG130 form three new surfaces. AVE-2026-00065 is partly covered for inline Gemini cards. The record set is unchanged at 89 (61 static) under schema 1.3.0, every record active. Both sides are pinned by commit: cfgaudit at the v1.21.0 tag, AVE at the commit read.",
+  "generated": "2026-11-14",
+  "note": "cfgaudit is a static auditor of committable AI-agent CONFIGURATION files. It does not connect to running servers or observe runtime, so it maps only to AVE's static_detection records. Each cfgaudit rule emits its primary AVE id in JSON/SARIF output (see github.com/cfgaudit/cfgaudit/blob/main/docs/cfgaudit-to-ave.md). Mappings are class-level behavioral equivalence, not asserted identity. cfgaudit maps 73 config-surface rules onto 29 AVE behavioral classes. This revision covers cfgaudit v1.21.0, which added thirteen rules, CFG124 to CFG136, and retired CFG017 (it reported an MCP key no agent reads; it was not mapped). Seven new rules are mapped: CFG125 (a command line that turns off a child agent's approval controls) to AVE-2026-00063; CFG127 (an MCP server run from a hidden folder in the home directory) to AVE-2026-00055; CFG129 (a committed .pyc that runs instead of its source) to AVE-2026-00075, a class new to this crosswalk, partial; CFG134 (pi project packages and extensions) and CFG136 (a Claude Code plugin hooks module, measured to run at session start) to AVE-2026-00064; CFG131 to AVE-2026-00073 and CFG132 to AVE-2026-00001, each on one half of the rule. Six are unmapped: CFG133 joins 'sandbox weakening in config'; CFG135 joins 'a committed path that makes the agent read a file on the reader's machine'; CFG124, CFG126 with CFG128, and CFG130 form three new surfaces. AVE-2026-00065 is partly covered for inline Gemini cards. AVE v1.3.0 rejects AVE-2026-00052, 00053, 00060 and 00061 (discussion 234) as conventional weaknesses with no agentic mechanism. Of the four, only 00061 was mapped, to CFG075: that mapping is dropped and 00061 joins the gaps with a CWE-295 pointer. cfgaudit v1.21.0 still emits 00061 for CFG075; from the next cfgaudit release on it emits no AVE id for it (cfgaudit/cfgaudit#1769). The record counts still include the rejected records: 89, 61 of them static_detection; the other 85 are active. Both sides are pinned by commit: cfgaudit at the v1.21.0 tag, AVE at the commit the v1.3.0 release was built from.",
   "mappings": [
     {
       "ave_id": "AVE-2026-00001",
@@ -191,13 +191,6 @@
       ]
     },
     {
-      "ave_id": "AVE-2026-00061",
-      "title": "TLS certificate verification disabled in agent component configuration",
-      "cfgaudit_rules": [
-        "CFG075"
-      ]
-    },
-    {
       "ave_id": "AVE-2026-00062",
       "title": "Unpinned dependency version allowing supply chain substitution",
       "cfgaudit_rules": [
@@ -298,7 +291,11 @@
     },
     {
       "ave_id": "AVE-2026-00060",
-      "note": "STDIO transport shell injection. Server-side implementation flaw, requires SAST of the MCP server source rather than reading its launch configuration. Same layer as AVE-2026-00052 and AVE-2026-00053; see the static_detection note below."
+      "note": "STDIO transport shell injection. Server-side implementation flaw, requires SAST of the MCP server source rather than reading its launch configuration. Same layer as AVE-2026-00052 and AVE-2026-00053; see the static_detection note below. Rejected in AVE v1.3.0 with 00052, 00053 and 00061 (discussion 234)."
+    },
+    {
+      "ave_id": "AVE-2026-00061",
+      "note": "TLS certificate verification disabled in component configuration. Rejected in AVE v1.3.0 (discussion 234): turning verification off works the same whether a model or a program makes the connection, so the class is CWE-295 (improper certificate validation) rather than an agentic one. CFG075 reports exactly this in an MCP server's env or args (NODE_TLS_REJECT_UNAUTHORIZED=0, GIT_SSL_NO_VERIFY, --insecure) and was mapped here until this revision. cfgaudit v1.21.0 still emits the id; from the next release on it emits none (cfgaudit/cfgaudit#1769)."
     },
     {
       "ave_id": "AVE-2026-00065",
@@ -328,9 +325,9 @@
   "coverage": {
     "ave_static_records": 61,
     "cfgaudit_rules_total": 135,
-    "cfgaudit_rules_mapped": 74,
-    "ave_classes_covered": 30,
-    "cfgaudit_rules_unmapped": 61
+    "cfgaudit_rules_mapped": 73,
+    "ave_classes_covered": 29,
+    "cfgaudit_rules_unmapped": 62
   },
   "validation": {
     "against": {
@@ -361,7 +358,7 @@
         "CFG049",
         "CFG097"
       ],
-      "note": "Mostly closed, and narrower than this row used to claim. AVE-2026-00073 names a cleartext model or provider base URL outright, which is why CFG071 now maps to it and no longer appears here. What is left is a committed http:// MCP server URL (CFG049) and an A2A agent_card_url (CFG097's second half), both reached only by that record's catch-all 'an equivalent traffic-destination value'. Whether to name them explicitly is the open question from aveproject/ave#123. AVE-2026-00061 stays a different failure: verification disabled, not no TLS at all."
+      "note": "Mostly closed, and narrower than this row used to claim. AVE-2026-00073 names a cleartext model or provider base URL outright, which is why CFG071 now maps to it and no longer appears here. What is left is a committed http:// MCP server URL (CFG049) and an A2A agent_card_url (CFG097's second half), both reached only by that record's catch-all 'an equivalent traffic-destination value'. Whether to name them explicitly is the open question from aveproject/ave#123. AVE-2026-00061, rejected in v1.3.0, was a different failure: verification disabled, not no TLS at all."
     },
     {
       "surface": "plugin auto-load from a committed manifest",
@@ -440,7 +437,7 @@
         "CFG132",
         "CFG135"
       ],
-      "note": "CFG115 added at v1.17.1, CFG116 at v1.18.0. CFG115: a committed config path is a symbolic link that resolves outside the repository, so the agent loads its settings, MCP config or instructions from a file on the machine that checked the repository out. CFG116: an @path import in a committed CLAUDE.md, AGENTS.md or .claude/rules file resolves outside the repository (~/..., an absolute path, ../ past the root); Claude Code loads it after a once-per-project approval dialog. A reviewer sees the link or the import line, but not the content of the file it reaches. AVE-2026-00001 is a remote fetch, AVE-2026-00047 a credential written into the component, AVE-2026-00053 a path traversal in an MCP tool's own path validation and AVE-2026-00089 a runtime_observed sandbox scope taken from a tool parameter; none covers a repository choosing which local file the agent reads. Extended at v1.21.0: CFG135, a Claude Code plugin.json component path (skills, agents, commands, hooks) that leaves the plugin root (CVE-2026-44641); the local-path halves of CFG131 (Junie mcp/skill/command/agent/guidelines locations) and CFG132 (OpenCode instructions and skills given as ~ or absolute paths)."
+      "note": "CFG115 added at v1.17.1, CFG116 at v1.18.0. CFG115: a committed config path is a symbolic link that resolves outside the repository, so the agent loads its settings, MCP config or instructions from a file on the machine that checked the repository out. CFG116: an @path import in a committed CLAUDE.md, AGENTS.md or .claude/rules file resolves outside the repository (~/..., an absolute path, ../ past the root); Claude Code loads it after a once-per-project approval dialog. A reviewer sees the link or the import line, but not the content of the file it reaches. AVE-2026-00001 is a remote fetch, AVE-2026-00047 a credential written into the component, AVE-2026-00053 (rejected in v1.3.0) a path traversal in an MCP tool's own path validation and AVE-2026-00089 a runtime_observed sandbox scope taken from a tool parameter; none covers a repository choosing which local file the agent reads. Extended at v1.21.0: CFG135, a Claude Code plugin.json component path (skills, agents, commands, hooks) that leaves the plugin root (CVE-2026-44641); the local-path halves of CFG131 (Junie mcp/skill/command/agent/guidelines locations) and CFG132 (OpenCode instructions and skills given as ~ or absolute paths)."
     },
     {
       "surface": "a committed file that takes the place of a tool the agent runs",

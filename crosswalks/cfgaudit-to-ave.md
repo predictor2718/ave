@@ -8,15 +8,17 @@ cfgaudit emits each rule's primary AVE id in its JSON and SARIF output (`AVEID` 
 
 | | Version |
 |---|---|
-| cfgaudit | 1.21.0, read at the tag (`8e13742`) |
-| AVE record set | 89 records (AVE-2026-00001 .. 00089), 61 of them `static_detection`, schema 1.3.0, read at `8b1f230` |
+| cfgaudit | 1.21.0, read at the tag (`8e13742`); the next release drops CFG075's AVE id ([cfgaudit#1769](https://github.com/cfgaudit/cfgaudit/pull/1769)) |
+| AVE record set | v1.3.0: 89 records (AVE-2026-00001 .. 00089), 61 of them `static_detection`, 4 of them `rejected`, read at the release commit (`647e1ce`) |
 | Bawbel Scanner (validation, below) | 1.3.0 |
 
 ## Coverage
 
-cfgaudit has **135 rules** in total. **74 of them map onto 30 AVE behavioral classes.** It is a many-to-one mapping: several cfgaudit rules land on the same AVE class, because cfgaudit slices threats by config surface where AVE slices by behavior. For example, cfgaudit has five distinct secret-detection rules (a secret in `settings.json` env, in an MCP `env`/`headers` block, an entropy fallback, a Continue inline `apiKey`, a crypto signing key), and all five map to the single AVE class `AVE-2026-00047` (hardcoded credentials in component).
+cfgaudit has **135 rules** in total. **73 of them map onto 29 AVE behavioral classes.** It is a many-to-one mapping: several cfgaudit rules land on the same AVE class, because cfgaudit slices threats by config surface where AVE slices by behavior. For example, cfgaudit has five distinct secret-detection rules (a secret in `settings.json` env, in an MCP `env`/`headers` block, an entropy fallback, a Continue inline `apiKey`, a crypto signing key), and all five map to the single AVE class `AVE-2026-00047` (hardcoded credentials in component).
 
-The other 61 rules have no AVE class: they check config surfaces AVE's skill and MCP-server records do not enumerate (see "Config surfaces beyond AVE's model" below).
+The other 62 rules have no AVE class: they check config surfaces AVE's skill and MCP-server records do not enumerate (see "Config surfaces beyond AVE's model" below).
+
+**AVE v1.3.0 rejects four records.** `AVE-2026-00052`, `00053`, `00060` and `00061` are conventional weaknesses whose mechanism does not change when the model is replaced by a deterministic program ([discussion 234](https://github.com/aveproject/ave/discussions/234)). Only `00061` was mapped, to `CFG075` (TLS verification turned off in an MCP server's `env` or `args`). That mapping is dropped, and `00061` moves to the gaps with a pointer to CWE-295. cfgaudit v1.21.0 still emits `00061` for `CFG075`; from the next cfgaudit release on it emits no AVE id for it ([cfgaudit#1769](https://github.com/cfgaudit/cfgaudit/pull/1769)). `00052` and `00053` were never mapped, and `00060` was already a gap.
 
 **This revision covers cfgaudit v1.21.0**, which added thirteen rules, `CFG124` to `CFG136`, and retired `CFG017`. `CFG017` reported a key in an MCP configuration that no agent reads, and it was not mapped.
 
@@ -29,9 +31,9 @@ The other 61 rules have no AVE class: they check config surfaces AVE's skill and
 - **Six new rules are unmapped.** `CFG133` (VS Code agent sandbox settings) joins "sandbox weakening in config". `CFG135` (a `plugin.json` component path that leaves the plugin root) joins "a committed path that makes the agent read a file on the reader's machine", with the local-path halves of `CFG131` and `CFG132`. `CFG124`, `CFG126` with `CFG128`, and `CFG130` form three new surfaces, listed below.
 - **`AVE-2026-00065` is now partly covered** for committed inline Gemini agent cards. The gap row says how far.
 
-**The record set is unchanged at 89**, 61 of them `static_detection`. Schema 1.3.0 added the `merged` and `rejected` statuses; every record is `active`, and no title or class of a mapped record changed.
+**The record set is unchanged at 89**, 61 of them `static_detection`; the counts include the four rejected records. The other 85 are `active`, and no title or class of a mapped record changed.
 
-**Both sides are pinned by commit**, so the counts can be re-derived. The cfgaudit tree read is the `v1.21.0` tag itself.
+**Both sides are pinned by commit**, so the counts can be re-derived. The cfgaudit tree read is the `v1.21.0` tag itself, and the AVE tree the commit the v1.3.0 release was built from.
 
 ## Rule mapping
 
@@ -59,7 +61,6 @@ The other 61 rules have no AVE class: they check config surfaces AVE's skill and
 | CFG007, CFG050, CFG054, CFG065, CFG073, CFG097 | AVE-2026-00047 | hardcoded credentials in component | secrets in settings or MCP env/headers; CFG097 adds a literal in a Gemini remote agent's `auth` block |
 | CFG059 | AVE-2026-00017 | server impersonation / spoofing | MCP server name typosquat |
 | CFG019, CFG020, CFG070, CFG127 | AVE-2026-00055 | command exec via untrusted MCP launch config | inline-script, env-code, repo-relative launcher; CFG127 an MCP server run from a hidden folder in the home directory |
-| CFG075 | AVE-2026-00061 | TLS verification disabled in config | `NODE_TLS_REJECT_UNAUTHORIZED=0`, `GIT_SSL_NO_VERIFY`, `--insecure` in MCP `env`/`args` |
 | CFG010, CFG055, CFG074, CFG089, CFG098 | AVE-2026-00062 | unpinned dependency / supply-chain substitution | unpinned `@latest`/`:latest`, `skills-lock.json` with no integrity pin, marketplace source without a full-SHA pin; CFG098 adds a `marketplace.json` archive source with no `sha256` and an npm source at a non-default registry |
 | CFG003, CFG004, CFG048, CFG053, CFG063, CFG079, CFG087, CFG091, CFG093, CFG096, CFG104, CFG105, CFG125 | AVE-2026-00063 | approval gate bypassed by declarative config | `enableAllProjectMcpServers`, `defaultMode: bypassPermissions`, VS Code `chat.permissions.default`, blanket MCP-trust keys, Codex `approval_policy`/`approvals_reviewer`, `autoMode` classifier, a hook answering a permission gate, qwen `approvalMode: yolo`, Cursor allowlists, Gemini MCP `trust`, Devin `permissions.allow`, OpenCode `permission`; CFG125 a command line that turns off a child agent's approval controls |
 | CFG047, CFG067, CFG086, CFG114, CFG134, CFG136 | AVE-2026-00064 | zero-click project-load auto-run | `.vscode/tasks.json` `runOn: folderOpen` and Zed `create_worktree` hook tasks, committed project hooks, zero-click hook events; CFG114 adds committed OpenCode `.opencode/plugin` and `.opencode/tool` code. CFG114 also reports committed Copilot CLI project extensions, at `info` only: those load after folder trust and behind an experimental flag, so they are not zero-click, but the rule emits one id; CFG134 a pi project folder's packages and extensions; CFG136 a Claude Code plugin hooks module, run as code at session start |
@@ -75,7 +76,7 @@ Mappings are class-level behavioral equivalence, not asserted identity. Where a 
 
 AVE's records enumerate behavior in skills and MCP servers. cfgaudit additionally audits config-file classes that carry no corresponding AVE behavioral class today.
 
-Seven of the eight surfaces listed here at v1.10.0 have since been closed by AVE records: permission/approval config and the committed-hook auto-approve case by `AVE-2026-00063`, zero-click auto-run by `AVE-2026-00064`, TLS verification disabled by `AVE-2026-00061`, supply-chain pinning by `AVE-2026-00062`, container/daemon posture by `AVE-2026-00071`, MCP network posture by `AVE-2026-00072`, and telemetry/endpoint redirect by `AVE-2026-00073`. The natural-language-steering surface added in the last revision was closed by `AVE-2026-00076` in the same window. What remains:
+Seven of the eight surfaces listed here at v1.10.0 have since been closed by AVE records: permission/approval config and the committed-hook auto-approve case by `AVE-2026-00063`, zero-click auto-run by `AVE-2026-00064`, TLS verification disabled by `AVE-2026-00061` (rejected in v1.3.0, so `CFG075` now carries no id; see Gaps), supply-chain pinning by `AVE-2026-00062`, container/daemon posture by `AVE-2026-00071`, MCP network posture by `AVE-2026-00072`, and telemetry/endpoint redirect by `AVE-2026-00073`. The natural-language-steering surface added in the last revision was closed by `AVE-2026-00076` in the same window. What remains:
 
 | Config surface | Example files / keys | Example rules | Status |
 |---|---|---|---|
@@ -129,7 +130,7 @@ This is the last of the eight, and the reason it is still open is that the field
 
 ### The surface added in an earlier revision (v1.17.1 and v1.18.0)
 
-**A committed path that makes the agent read a file on the reader's machine (CFG115, CFG116).** `CFG115`: a committed config path (`.claude/settings.json`, `.mcp.json`, `CLAUDE.md`, a skill) is a symbolic link, or runs through a linked directory, that resolves outside the repository, so the agent loads a file from the machine that checked the repository out. `CFG116`: an `@path` import in a committed `CLAUDE.md`, `AGENTS.md` or `.claude/rules` file resolves outside the repository (`@~/...`, an absolute path elsewhere, `../` past the root). Measured with Claude Code 2.1.310, such an import is not loaded in print mode, and an interactive session loads it only after a once-per-project dialog that lists the files. In both cases the repository chooses which local file the agent reads. A reviewer sees the link or the import line, but not the content of the file it reaches. The nearest records do not cover this: `AVE-2026-00001` is a fetch from a remote source, `AVE-2026-00047` a credential written into the component, `AVE-2026-00053` a path traversal in an MCP tool's own path validation, and `AVE-2026-00089` a sandbox whose writable scope comes from a tool parameter (`runtime_observed`).
+**A committed path that makes the agent read a file on the reader's machine (CFG115, CFG116).** `CFG115`: a committed config path (`.claude/settings.json`, `.mcp.json`, `CLAUDE.md`, a skill) is a symbolic link, or runs through a linked directory, that resolves outside the repository, so the agent loads a file from the machine that checked the repository out. `CFG116`: an `@path` import in a committed `CLAUDE.md`, `AGENTS.md` or `.claude/rules` file resolves outside the repository (`@~/...`, an absolute path elsewhere, `../` past the root). Measured with Claude Code 2.1.310, such an import is not loaded in print mode, and an interactive session loads it only after a once-per-project dialog that lists the files. In both cases the repository chooses which local file the agent reads. A reviewer sees the link or the import line, but not the content of the file it reaches. The nearest records do not cover this: `AVE-2026-00001` is a fetch from a remote source, `AVE-2026-00047` a credential written into the component, `AVE-2026-00053` (rejected in v1.3.0) a path traversal in an MCP tool's own path validation, and `AVE-2026-00089` a sandbox whose writable scope comes from a tool parameter (`runtime_observed`).
 
 ### Surfaces added in the previous revision (v1.20.0)
 
@@ -193,7 +194,8 @@ Static `static_detection` classes cfgaudit does not map, with the reason:
 | AVE-2026-00015 | system-prompt extraction. Maps to OWASP LLM07, which cfgaudit treats as runtime; the instruction is static, but the scope boundary is undecided. |
 | AVE-2026-00036 | lateral movement. cfgaudit implemented and then reverted this rule after a false-positive analysis over 422 real instruction files: the vocabulary (`lateral movement`, `pivot to other systems`) is statically indistinguishable from security-tool self-description and defensive contexts. The reverted rule used the CFG091 id, which cfgaudit has since reused for the qwen approval-mode rule (mapped to AVE-2026-00021). |
 | AVE-2026-00059 | fragmented cross-description injection. Needs multi-source correlation; cfgaudit checks each file in isolation, which is the exact property this attack defeats. |
-| AVE-2026-00060 | STDIO transport shell injection. A server-side implementation flaw: it needs SAST of the MCP server's source, not a read of its launch configuration. Same layer as AVE-2026-00052 and AVE-2026-00053. |
+| AVE-2026-00060 | STDIO transport shell injection. A server-side implementation flaw: it needs SAST of the MCP server's source, not a read of its launch configuration. Same layer as AVE-2026-00052 and AVE-2026-00053. Rejected in AVE v1.3.0 with 00052, 00053 and 00061. |
+| AVE-2026-00061 | TLS certificate verification disabled in component configuration. Rejected in AVE v1.3.0: turning verification off works the same whether a model or a program makes the connection, so the class is [CWE-295](https://cwe.mitre.org/data/definitions/295.html) (improper certificate validation) rather than an agentic one. `CFG075` reports exactly this (`NODE_TLS_REJECT_UNAUTHORIZED=0`, `GIT_SSL_NO_VERIFY`, `--insecure` in MCP `env`/`args`) and was mapped here until this revision. |
 | AVE-2026-00065 | A2A agent card poisoning. Partly covered since v1.21.0 for committed inline Gemini cards: cfgaudit parses the serialized `agent_card_json` and runs its instruction-content rules (`CFG024`, `CFG026`, `CFG030` to `CFG033`, `CFG036`, `CFG057`, `CFG080`, `CFG113`, `CFG120`) on exactly what Gemini copies into the remote-agent tool description: the card description and each skill name and description. Those rules emit their own primary ids, so no finding carries `AVE-2026-00065`, and a card fetched at runtime stays outside static analysis. `CFG097` still reports a cleartext `agent_card_url` and a credential literal in the `auth` block. |
 | AVE-2026-00069 | Image-hidden instructions in a skill package. Needs binary content analysis of a bundled image; cfgaudit reads text configuration only. Same layer as AVE-2026-00024. |
 | AVE-2026-00077 | Cross-origin tool and resource declaration in one MCP manifest. cfgaudit reads MCP *launch* configuration (`command`, `args`, `env`, `url`, `headers`), not the manifest a server returns once it is running, so the two declarations this record correlates are never both in view. |
