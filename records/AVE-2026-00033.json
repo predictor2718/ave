@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00033",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "component_type": "skill",
   "title": "Unsafe Deserialization or Eval Instruction",
   "attack_class": "Tool Abuse - Unsafe Deserialization",
@@ -28,7 +28,7 @@
   "mitre_atlas": [
     "AML.T0011"
   ],
-  "behavioral_fingerprint": "Component instructs the agent to deserialize untrusted data using insecure methods (pickle, yaml.load, eval) or to evaluate dynamic code strings received from external or user-controlled sources, enab",
+  "behavioral_fingerprint": "Component instructs agent to deserialize untrusted input or evaluate dynamic code from external sources.",
   "behavioral_vector": [
     "deserialization",
     "code-exec",
@@ -43,6 +43,13 @@
     "requires": [
       "untrusted_content"
     ]
+  },
+  "security_boundary": "instruction content → unsafe deserialization/eval call, with no boundary between them",
+  "missing_control": "no detection of unsafe deserialization or eval when it is instructed in natural language and not written as code",
+  "vulnerability_rationale": {
+    "capability": "Agent follows instructions to deserialize or evaluate externally supplied data.",
+    "vulnerability": "Conventional remote code execution through unsafe deserialization or eval (CWE-502 and CWE-94), delivered through natural language. The mechanism is conventional; the distinction is the channel, as for AVE-2026-00004 and 00005: the unsafe operation is instructed in text that an agent follows, and code-oriented scanners do not read that text.",
+    "impact": "A reliable code execution path through the agent's execution environment."
   },
   "mitigation": {
     "strategy": [
@@ -88,7 +95,7 @@
   "researcher": "Saray Chak",
   "researcher_url": "https://bawbel.io",
   "published": "2026-04-19T09:00:00Z",
-  "last_updated": "2026-08-26T00:00:00Z",
+  "last_updated": "2026-11-04T00:00:00Z",
   "references": [
     {
       "tag": "CWE-502",
@@ -140,5 +147,15 @@
       "pin_status": "unknown",
       "read_date": "2026-10-15"
     }
-  }
+  },
+  "revisions": [
+    {
+      "date": "2026-10-31",
+      "field": "behavioral_fingerprint",
+      "from": "Component instructs the agent to deserialize untrusted data using insecure methods (pickle, yaml.load, eval) or to evaluate dynamic code strings received from external or user-controlled sources, enab",
+      "to": "Component instructs agent to deserialize untrusted input or evaluate dynamic code from external sources.",
+      "reason_code": "declaration_corrected",
+      "reason": "Cut off at 200 characters, mid-word, by the AIVSS migration (f2f4b40, #18, 2026-05-13); restored to the sentence the record had before it, which the cut text does not complete from the record's own words. Corrected in #414."
+    }
+  ]
 }

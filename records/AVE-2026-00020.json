@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00020",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "component_type": "skill",
   "title": "Cross-Agent Prompt Injection (A2A)",
   "attack_class": "Prompt Injection - Cross-Agent A2A",
@@ -47,6 +47,13 @@
       "untrusted_content"
     ]
   },
+  "security_boundary": "orchestrator-intended output → sub-agent input, same channel",
+  "missing_control": "no boundary between task content and instruction at the agent-to-agent handoff specifically",
+  "vulnerability_rationale": {
+    "capability": "One agent's output becomes a downstream sub-agent's input in a delegation pipeline.",
+    "vulnerability": "No boundary distinguishes orchestrator-intended content from attacker-crafted instructions at the agent-to-agent handoff.",
+    "impact": "Downstream agent performs actions the orchestrator or user never intended, bypassing orchestrator-level safety controls."
+  },
   "mitigation": {
     "strategy": [
       "validate_input",
@@ -90,7 +97,7 @@
   "researcher": "Bawbel Security Research Team",
   "researcher_url": "https://bawbel.io",
   "published": "2026-04-19T09:00:00Z",
-  "last_updated": "2026-08-29T00:00:00Z",
+  "last_updated": "2026-10-31T00:00:00Z",
   "references": [
     {
       "tag": "Cohen 2024",

@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00025",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "component_type": "skill",
   "title": "Conversation History Injection",
   "attack_class": "Prompt Injection - Conversation History",
@@ -40,6 +40,13 @@
     "requires": [
       "untrusted_content"
     ]
+  },
+  "security_boundary": "genuine session history (should be structurally distinct) → arbitrary content shaped to resemble history (currently indistinguishable to the model)",
+  "missing_control": "no structural or cryptographic separation between real history and content merely formatted to look like it",
+  "vulnerability_rationale": {
+    "capability": "Agent relies on conversation history to infer prior user intent and consent.",
+    "vulnerability": "No integrity or provenance check distinguishes genuine prior-turn history from content merely styled to resemble it within the current turn's context.",
+    "impact": "The agent believes the user previously approved an action, said something they did not, or established a precedent that does not exist, which enables social engineering of its decisions."
   },
   "mitigation": {
     "strategy": [
@@ -84,7 +91,7 @@
   "researcher": "Saray Chak",
   "researcher_url": "https://bawbel.io",
   "published": "2026-04-19T09:00:00Z",
-  "last_updated": "2026-08-26T00:00:00Z",
+  "last_updated": "2026-10-31T00:00:00Z",
   "references": [
     {
       "tag": "Greshake 2023",

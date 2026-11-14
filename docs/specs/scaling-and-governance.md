@@ -51,14 +51,73 @@ Never edited retroactively, including typo fixes; a correction ships in
 the next version, not a silent edit to a version already published and
 potentially already depended on by an implementer who pinned to it.
 
-**Version bump rules**:
+Freezing is enforced, not only stated. `schema/frozen-artifacts.json` records the
+SHA-256 of every frozen file, and `tests/test_frozen_artifacts.py` fails when one of
+those files changes or disappears, and also when a change removes or rehashes an
+entry compared with where it left its base branch. The alias and
+`dist/ave-records-latest.*` are deliberately not in that list: they move.
 
-- Additive, optional field: minor bump (1.1 to 1.2).
-- Removing or renaming a required field, or changing an existing field's
-  meaning: major bump (1.x to 2.0).
+A `dist/ave-records-vX.Y.Z.json` snapshot is named after a schema version, not a
+catalog release: it is the first record set published for that schema version. The
+record set an implementer pins between schema versions is a catalog release
+(Section 6).
+
+**Compatibility, which decides the version bump.** Compatibility is defined for
+consumers of published records.
+
+- A **minor** version never removes or renames a field, never changes a field's
+  meaning, and never narrows an existing type, enum or pattern. It may add optional
+  fields, widen enums, and add a requirement that every record AVE publishes already
+  satisfies in the same release.
+- Anything else is a **major** version.
+- **Consumers must treat any `status` other than `active` as not active, and must
+  not assume an enum's list of values is complete.** This is what lets an enum widen
+  in a minor version. Without it, a consumer that only filters out `deprecated`
+  would read a `merged` or `rejected` record (Section 3) as active.
+
+Under this rule:
+
+- An additive, optional field is minor (1.1 to 1.2).
+- Adding the `merged` and `rejected` statuses, with `merged_into` and
+  `rejection_reason` required on them, is minor (1.2 to 1.3): no published record
+  had either status when they were added.
+- Requiring the framework keys (#178) is minor only once every published record
+  carries them.
+- Removing or renaming a field, or changing a field's meaning, is major (1.x to 2.0).
 
 Every record must validate against the schema version it declares in its
-own `schema_version` field, enforced in CI.
+own `schema_version` field, enforced in CI: `scripts/validate_records.py` looks up
+`schema/ave-record-<schema_version>.schema.json` for each record and rejects a
+version that has no file.
+
+**Shipping an optional field after a release.** It goes into the next minor
+version as a new versioned file, `schema/ave-record-X.(Y+1).0.schema.json`, with the
+alias updated to match. Every record's `schema_version` is bumped with a one-line
+edit, the build writes the new `dist/ave-records-vX.(Y+1).0.json` snapshot and its
+manifest, and the new schema file and snapshot pair are added to
+`schema/frozen-artifacts.json`. Nothing already frozen is touched.
+
+**History, and why 1.2.0 exists.** The rules above were not followed at first, and
+1.2.0 is where they start being enforced. The `v1.1.0` GitHub Release (2026-06-24)
+was a catalog release: 51 records on schema 1.0.0, with an asset named
+`ave-records-v1.1.0.json`; its tag holds no 1.1.0 schema file. The versioned
+`schema/ave-record-1.1.0.schema.json` was created afterwards (#37, 2026-07-11), and
+`dist/ave-records-v1.1.0.json` on 2026-07-19 (#63) with 59 records on schema 1.1.0,
+so two different files carry the name `ave-records-v1.1.0.json`. The 1.1.0 schema
+then took eight optional properties in place: `evidence_method`, `evidence_vantage`
+and `verification_basis` (commit `038dbf6`, #226, resolving #222);
+`missing_control`, `security_boundary` and `vulnerability_rationale` (#231);
+`framework_sources` (#247, extended by #256 and #266); and `revisions` (#323). The
+same sync widened the `evidence_basis_engines` enum with `external_authority`. The
+1.0.0 file was edited twice after its tag: #24 added `prompt` to the
+`component_type` enum and reworded three descriptions, and #166 changed its `$id`,
+which the v1.0.0 release notes had called permanent, when the old host was retired.
+None of these changes narrowed anything, so together they are a minor version:
+1.2.0 is the 1.1.0 schema as it stood, published under its own number. From 1.2.0
+on, the 1.0.0, 1.1.0 and 1.2.0 files are frozen exactly as they stand, and
+`dist/ave-records-v1.1.0.json` and `dist/ave-records-v1.2.0.json` with them.
+Schema 1.3.0 (#104) is the first version shipped by the process above from the
+start; its schema file and `dist/ave-records-v1.3.0.json` are frozen the same way.
 
 ## 3. Deprecation policy
 
@@ -74,17 +133,25 @@ it silently gone.
 - `deprecated`: superseded by better understanding of the same class.
   Content stays, a note explains why it's no longer primary.
 - `merged`: a genuine duplicate or sub-case of another record. Adds
-  `merged_into`, pointing at the surviving `ave_id`. The merged record's
+  `merged_into`, pointing at the surviving `ave_id`, which must be an
+  `active` record, so merges never chain or loop. The merged record's
   own content and ID remain permanently resolvable.
 - `rejected`: found invalid, not a real distinct class. Adds
-  `rejection_reason`. Stays resolvable, matching CVE's own REJECT state.
+  `rejection_reason`, free text that links the public decision (an issue
+  or discussion). Stays resolvable, matching CVE's own REJECT state.
 
-**Implementation note**: the `status` enum expansion and the
-`merged_into`/`rejection_reason` fields are a real schema change, tracked
-separately as part of a future version bump (alongside `owasp_ast`, see
-`AVE_V1.1.0_MIGRATION_BRIEF.md` Section 7.0), not implied to already exist
-by this policy document. This section states the policy the schema change
-will implement, it does not implement it.
+A record that leaves `active` keeps its full field set, whatever its new
+status. Consumers treat every status other than `active` as not active
+(Section 2).
+
+**Implementation note**: schema 1.3.0 implements this section (#104).
+`status` gains `merged` and `rejected`; `merged_into` is required when a
+record is `merged` and `rejection_reason` when it is `rejected`; every
+status except `draft` requires the full field set. `scripts/validate_records.py`
+checks what the schema cannot: each field only on its own status, no
+record merged into itself, a merge target that exists and is `active`, and
+a `rejection_reason` that links a GitHub issue or discussion. The note a
+`deprecated` record carries has no dedicated field.
 
 ## 4. Crosswalk discipline
 
@@ -194,3 +261,82 @@ now, while the corpus is still small, is deliberately the same
 discipline Section 1 already applies to record-growth: cheap to commit
 to early, expensive to retrofit credibly after an implementer has
 already depended on a number that then moved.
+
+## 6. Catalog releases
+
+A schema version describes the shape of a record. A catalog release is a fixed,
+checksummed copy of the record set itself, published on its own cadence, the way
+the CVE List publishes baseline and delta archives and OSV publishes `all.zip`.
+The two are numbered separately.
+
+**Three kinds of record file:**
+
+| File | What it is | Changes? |
+|---|---|---|
+| `ave-records.json` on the GitHub Release `vX.Y.Z` | The record set as of that catalog release | Never; the next release is a new tag |
+| `dist/ave-records-latest.json` | The current record set | On every change to `records/` |
+| `dist/ave-records-v<schema>.json` | The first record set published for that schema version | Never; frozen (Section 2) |
+
+**Releases are GitHub Releases tagged `vX.Y.Z`**, continuing `v1.0.0` and `v1.1.0`.
+`v1.2.0` happens to ship schema 1.2.0; after it the two numbers move independently.
+
+**Catalog SemVer:**
+
+- Patch: corrections to existing records only, no new ids.
+- Minor: new records, or a minor schema version.
+- Major: a major schema version, or any change to what an id means.
+
+**Assets on every release:**
+
+- `ave-records.json`: every non-draft record, built by `scripts/build-records.js`,
+  the same script that writes `dist/`, from `records/` at the tagged commit.
+- `ave-records.manifest.json`: `release`, `schema_version`, `record_count`,
+  `generated_at`, `source`, `sha256` (of `ave-records.json`) and `source_commit`,
+  the tagged commit.
+- `ave-taxonomy.json` (from v1.3.0): the SARIF taxonomy (see
+  `docs/specs/ave-in-sarif.md`) of exactly this release's records, built by
+  `scripts/build_taxonomy.py` from `ave-records.json`, with the release's own
+  version, the manifest's `generated_at` date and its own download URL.
+- `SHA256SUMS`: the data files, in `sha256sum` format (all three from v1.3.0).
+- A build provenance attestation for each data file, checked with
+  `gh attestation verify <file> --repo aveproject/ave`.
+
+Asset names carry no version; the tag does. `scripts/check_release_assets.py`
+checks the files against each other, against the tag and against the tagged commit.
+The release workflow runs it before publishing, and an implementer can run it after
+downloading (README, "Releases and pinning").
+
+**The taxonomy asset.** The verifier regenerates `ave-taxonomy.json` from the
+release's own `ave-records.json` and demands a byte match, so no field, taxon or
+character can differ from what the generator produces; a failure names the field
+or taxon first. Releases from v1.3.0 must carry it and a release without it fails
+verification; v1.0.0 to v1.2.0 shipped before it existed and verify without it.
+That makes the order mechanical: a release cut by a workflow that does not build
+the taxonomy fails its own verification, so the change that builds it has to merge
+before v1.3.0 is cut. Its `downloadUri` must point at the repository it is
+published under (`--repo owner/name`, default `aveproject/ave`), so a fork's
+release is verified against the fork. Stable URLs:
+`https://github.com/aveproject/ave/releases/download/vX.Y.Z/ave-taxonomy.json`
+and `https://github.com/aveproject/ave/releases/latest/download/ave-taxonomy.json`.
+`dist/ave-taxonomy-latest.json` is the moving copy and has no `version`.
+
+**Cadence:** a release when records have changed, at most monthly unless a
+correction is urgent. This is the maintainer's policy, and the maintainer can change
+it.
+
+**Cutting a release:** Actions > catalog-release
+(`.github/workflows/catalog-release.yml`), run by hand with `version`, `ref`
+(default `main`) and `draft` (default true). It refuses a commit that is not on
+`main`, a tag that already exists or is not greater than the newest one, and a
+version with no `## [X.Y.Z]` section in `CHANGELOG.md`; that section becomes the
+release notes. It then runs the validators and tests, builds and verifies the three
+files, attests them and creates the release, as a draft unless told otherwise. It
+never pushes to the repository. The tag is created when the release is published.
+
+**History.** `v1.0.0` (2026-06-18) was the first stable schema release and has no
+assets. `v1.1.0` (2026-06-24) shipped 51 records on schema 1.0.0 as one asset named
+`ave-records-v1.1.0.json`, a different file from the repo's
+`dist/ave-records-v1.1.0.json` (59 records on schema 1.1.0; Section 2 has the
+details). Between the two, `CHANGELOG.md` carried sections headed `[1.2.0]`
+(2026-07-12) and `[1.3.0]` (2026-07-17) that were never tagged; they now sit under
+`[Unreleased]` as dated notes, so `v1.2.0` is the first release to ship that work.

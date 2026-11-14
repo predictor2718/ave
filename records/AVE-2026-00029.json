@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00029",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "component_type": "skill",
   "title": "Homoglyph or Unicode Obfuscation Attack",
   "attack_class": "Obfuscation - Unicode Homoglyph",
@@ -25,7 +25,7 @@
   "mitre_atlas": [
     "AML.T0068"
   ],
-  "behavioral_fingerprint": "Component uses visually similar Unicode characters (homoglyphs), zero-width characters, or bidirectional text control codes to hide malicious instructions from human reviewers while remaining fully re",
+  "behavioral_fingerprint": "Skill file contains zero-width characters, bidirectional override codes, or Cyrillic homoglyphs used to conceal instructions from human reviewers.",
   "behavioral_vector": [
     "obfuscation",
     "unicode",
@@ -39,6 +39,13 @@
     "requires": [
       "untrusted_content"
     ]
+  },
+  "security_boundary": "human visual review → model-level codepoint processing",
+  "missing_control": "no Unicode normalization/canonicalization check before human review",
+  "vulnerability_rationale": {
+    "capability": "Human reviewers evaluate text visually; the model processes Unicode codepoints.",
+    "vulnerability": "No canonicalization or normalization step reconciles what a human reviewer visually sees with what the model actually processes at the codepoint level.",
+    "impact": "Instructions that look innocuous to a human reviewer are processed as instructions by the model."
   },
   "mitigation": {
     "strategy": [
@@ -84,7 +91,7 @@
   "researcher": "Boucher & Anderson",
   "researcher_url": "https://arxiv.org/abs/2111.00169",
   "published": "2026-04-19T09:00:00Z",
-  "last_updated": "2026-08-23T00:00:00Z",
+  "last_updated": "2026-10-31T00:00:00Z",
   "references": [
     {
       "tag": "Boucher 2021",
@@ -134,5 +141,15 @@
       "pin_status": "unknown",
       "read_date": "2026-10-15"
     }
-  }
+  },
+  "revisions": [
+    {
+      "date": "2026-10-31",
+      "field": "behavioral_fingerprint",
+      "from": "Component uses visually similar Unicode characters (homoglyphs), zero-width characters, or bidirectional text control codes to hide malicious instructions from human reviewers while remaining fully re",
+      "to": "Skill file contains zero-width characters, bidirectional override codes, or Cyrillic homoglyphs used to conceal instructions from human reviewers.",
+      "reason_code": "declaration_corrected",
+      "reason": "Cut off at 200 characters, mid-word, by the AIVSS migration (9e7dd0b, #17, 2026-05-12); restored to the sentence the record had before it, which the cut text does not complete from the record's own words. Corrected in #414."
+    }
+  ]
 }

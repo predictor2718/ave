@@ -62,8 +62,8 @@ classification standard. Different problem, different mechanism.
 
 | | |
 |---|---|
-| Records published | 59 (schema_version 1.1.0) |
-| Schema version | 1.1.0 |
+| Records published | 89 (schema_version 1.2.0) |
+| Schema version | 1.2.0 |
 | Registry and docs | aveproject.org |
 | Repo | github.com/aveproject/ave |
 
@@ -79,8 +79,8 @@ the former belongs in this table.
 
 | Standard | Field | Status |
 |---|---|---|
-| OWASP AIVSS v0.8 | `aivss` object | required once a record is active or deprecated |
-| OWASP MCP Top 10 | `owasp_mcp` | required once active or deprecated, MCP01-MCP10 |
+| OWASP AIVSS v0.8 | `aivss` object | required for every status except draft |
+| OWASP MCP Top 10 | `owasp_mcp` | required for every status except draft, MCP01-MCP10 |
 | OWASP Agentic Security Initiative Top 10 | `owasp_asi` | optional, ASI01-ASI10 |
 | MITRE ATLAS | `mitre_atlas` | optional, AML.Txxxx |
 | NIST AI RMF | `nist_ai_rmf` | optional |

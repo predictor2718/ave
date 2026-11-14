@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00039",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "component_type": "skill",
   "title": "Covert Channel - Steganographic Data Exfiltration",
   "attack_class": "Data Exfiltration - Covert Channel",
@@ -27,7 +27,7 @@
   "mitre_atlas": [
     "AML.T0048"
   ],
-  "behavioral_fingerprint": "Component instructs the agent to exfiltrate data through covert channels such as steganographic encoding in output text, first-letter encoding, whitespace patterns, or timing signals that are invisibl",
+  "behavioral_fingerprint": "Component instructs agent to encode sensitive data in output formatting, first-letter patterns, whitespace, or timing to create a covert exfiltration channel.",
   "behavioral_vector": [
     "covert-channel",
     "data-exfil",
@@ -43,6 +43,13 @@
       "private_data",
       "external_comms"
     ]
+  },
+  "security_boundary": "network-egress monitoring (exists) → content-level covert-channel monitoring (does not exist)",
+  "missing_control": "no content-level covert-channel detection independent of destination monitoring",
+  "vulnerability_rationale": {
+    "capability": "Agent output is reviewed by humans and monitored at the network layer.",
+    "vulnerability": "Exfiltration monitoring checks network destinations, not whether benign-looking output content itself encodes exfiltrated data; content-level exfiltration has no detection surface at all.",
+    "impact": "Sensitive data is exfiltrated through output that looks benign to a human reviewer, with no detection surface at the content level."
   },
   "mitigation": {
     "strategy": [
@@ -88,7 +95,7 @@
   "researcher": "Saray Chak",
   "researcher_url": "https://bawbel.io",
   "published": "2026-04-19T09:00:00Z",
-  "last_updated": "2026-08-23T00:00:00Z",
+  "last_updated": "2026-10-31T00:00:00Z",
   "references": [
     {
       "tag": "CWE-514",
@@ -139,5 +146,15 @@
       "pin_status": "unknown",
       "read_date": "2026-10-15"
     }
-  }
+  },
+  "revisions": [
+    {
+      "date": "2026-10-31",
+      "field": "behavioral_fingerprint",
+      "from": "Component instructs the agent to exfiltrate data through covert channels such as steganographic encoding in output text, first-letter encoding, whitespace patterns, or timing signals that are invisibl",
+      "to": "Component instructs agent to encode sensitive data in output formatting, first-letter patterns, whitespace, or timing to create a covert exfiltration channel.",
+      "reason_code": "declaration_corrected",
+      "reason": "Cut off at 200 characters, mid-word, by the AIVSS migration (9e7dd0b, #17, 2026-05-12); restored to the sentence the record had before it, which the cut text does not complete from the record's own words. Corrected in #414."
+    }
+  ]
 }

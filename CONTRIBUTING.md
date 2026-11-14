@@ -36,7 +36,7 @@ contribution makes AI agents safer for everyone.
    before writing JSON. The maintainer will confirm the next available id.
 
 4. **Read the schema** at
-   [`schema/ave-record-1.1.0.schema.json`](schema/ave-record-1.1.0.schema.json)
+   [`schema/ave-record-1.3.0.schema.json`](schema/ave-record-1.3.0.schema.json)
    for field definitions, types, and required/optional status. The schema
    reference page is at [aveproject.org/schema.html](https://aveproject.org/schema.html).
 
@@ -86,7 +86,9 @@ Key rules:
 
 - `behavioral_fingerprint` describes what the component *does*, not a string
   it contains. "Component fetches remote content and executes it as
-  instructions" not "contains the word fetch."
+  instructions" not "contains the word fetch." It is a whole sentence: it ends in
+  `.`, `!`, `?` or a closing bracket, quote or backtick, and is not exactly 200
+  characters long, which `scripts/validate_records.py` checks.
 - `owasp_mcp` is required with at least one entry, verified against the
   category's own primary-source text — not inferred from how a
   similar-sounding record in the corpus happened to tag itself.
@@ -118,6 +120,10 @@ Key rules:
   credit.
 - `severity` and `aivss.aivss_score` must agree:
   CRITICAL >= 9.0 · HIGH 7.0-8.9 · MEDIUM 4.0-6.9 · LOW < 4.0.
+- Add the record's row to the README record index and update the Stats
+  total and band count, the records badge, the index summary and the
+  record count in the "Independent validation" paragraph;
+  `tests/test_readme_sync.py` checks all but the last against `records/`.
 
 ### AIVSS v0.8 calculation
 
@@ -163,6 +169,7 @@ python scripts/check_mutation_thm_trail.py --strict --only AVE-2026-NNNNN   # if
 python scripts/check_framework_sources.py --strict --only AVE-2026-NNNNN   # CI enforces this for every record now; run it scoped to yours before pushing, same check either way
 python scripts/generate_terms.py      # regenerate docs/terms.md after any schema field or description change
 python scripts/check_terms_sync.py    # hard failure if docs/terms.md disagrees with the live schema -- run before opening a PR
+python3 scripts/build_taxonomy.py --check   # dist/ave-taxonomy-latest.json must match dist/ave-records-latest.json; run python3 scripts/build_taxonomy.py after you change that file
 pytest tests/ -x -q                   # full suite: schema, AIVSS arithmetic, mitigation enums
 ```
 
@@ -232,17 +239,26 @@ PR description must include:
 
 ## Schema changes
 
-**Additive changes** (new optional fields, clarified descriptions):
-standard PR. No version bump required.
+Open an issue first. Every schema change is a new version, sized by the
+compatibility rule in
+[the scaling spec, section 2](docs/specs/scaling-and-governance.md#2-schema-versioning-policy):
 
-**Structural changes** (new required fields, renamed fields, removed fields,
-changed validation rules): open an issue first. These require a schema
-version bump, a migration path for existing records, and a 30-day comment
-period before merging.
+- **Minor:** it only adds: an optional field, a wider enum, or a requirement
+  every published record already meets. It ships as a new versioned schema
+  file with the alias updated to match, every record's `schema_version`
+  bumped, and the new files added to `schema/frozen-artifacts.json`.
+- **Major:** anything that removes, renames or narrows a field, or changes its
+  meaning. It also needs a migration path for existing records and a 30-day
+  comment period before merging.
 
-Current schema: **v1.1.0**.
-Canonical file: `schema/ave-record-1.1.0.schema.json`.
-(`schema/ave-record-1.0.0.schema.json` remains, permanently, as the frozen v1.0.0 canonical.)
+A published versioned schema file never changes, not even a description; a
+correction ships in the next version.
+
+Current schema: **v1.3.0**.
+Canonical file: `schema/ave-record-1.3.0.schema.json`.
+(`schema/ave-record-1.0.0.schema.json`, `schema/ave-record-1.1.0.schema.json` and
+`schema/ave-record-1.2.0.schema.json` remain, permanently, as frozen earlier versions;
+`tests/test_frozen_artifacts.py` fails if any of them changes.)
 
 **Any change to a field's description, additive or structural, requires
 regenerating `docs/terms.md`**: `python scripts/generate_terms.py`, then
@@ -270,8 +286,66 @@ AIVSS score changes require written rationale for each AARF factor that
 changes. Framework mapping additions (`owasp_asi`, `mitre_atlas`)
 are welcome without prior issue if the mapping is clear.
 
-`ave_id` values are immutable. Never renumber a record. If a record is wrong
-or obsolete, set `status: "deprecated"` — never delete.
+If the change moves `aivss.aivss_score` or `severity`, update the record's
+row in the README record index, and the Stats band counts when the
+severity band changes; `tests/test_readme_sync.py` fails until they agree.
+
+`ave_id` values are immutable. Never renumber or delete a record. If a record
+is wrong or obsolete, change its `status` and keep its content:
+
+- `"deprecated"`: superseded by a better understanding of the same class; say
+  why in the pull request and in the record.
+- `"merged"`: a duplicate or sub-case of another record; set `merged_into` to
+  the surviving record, which must be `active`.
+- `"rejected"`: not a real distinct class; set `rejection_reason` to a short
+  explanation that links the public decision, a GitHub issue or discussion.
+
+`scripts/validate_records.py` checks the last two. See
+[the scaling spec, section 3](docs/specs/scaling-and-governance.md#3-deprecation-policy).
+
+### Recording a change: `revisions`
+
+Consumers gate on a record's `severity`, `status` and derived
+`verification_basis`, so a change to one of them has to say so in the record,
+not only in `last_updated`. Append an entry to the record's `revisions` array
+in the same pull request:
+
+```json
+{ "date": "2026-10-29", "field": "severity", "from": "MEDIUM", "to": "HIGH",
+  "reason_code": "score_revised", "reason": "Rescored in #294." }
+```
+
+`date` is the day the change merges. `from` is the value before (`null` when
+the field was absent) and `to` the value after, never `null`. The array is
+append-only: an earlier entry is never edited, reordered or removed. CI runs
+`python scripts/check_revisions_ratchet.py --ratchet-since origin/develop`,
+which compares each record you add or edit with its version where your branch
+left `develop`, and fails the pull request when
+
+- an earlier entry was changed, or the array was dropped, or
+- `severity`, `status` or the derived `verification_basis` changed and no new
+  entry explains it.
+
+A new record, and one that was still a `draft`, needs no entry: nothing a
+consumer could have gated on existed yet. Which `field` and `reason_code`:
+
+| What changed | `field` | `reason_code` |
+|---|---|---|
+| The record was rescored, so its severity moved | `severity` | `score_revised` |
+| The status changed (`deprecated`, `merged`, `rejected`) | `status` | `status_changed` |
+| A declaration the basis derives from was added | the declaration (`evidence_vantage`, `evidence_method` or `evidence_basis_engines`) | `declaration_added` |
+| Such a declaration was wrong and now differs | the same declaration | `declaration_corrected` |
+| A fingerprint was cut off or wrong and is corrected (the ratchet does not require this entry, but it is the record of the change) | `behavioral_fingerprint` | `declaration_corrected` |
+| The schema gained a vocabulary member, or the derivation rule changed, and the derived basis moved with no declaration changing | `verification_basis` | `vocabulary_member_added` or `derivation_rule_changed` |
+
+The derived `verification_basis` comes from
+`scripts/write_verification_basis.py`. When it moves because a declaration
+changed, the entry names that declaration, as AVE-2026-00074's does, and
+`reason` says the derived value moved. When no declaration changed, the entry
+names `verification_basis` itself, so the record must then carry that value
+(`python scripts/write_verification_basis.py --write` writes it into records
+already in that script's formatting). `scripts/validate_records.py` checks each
+entry's field, its from/to chain and its agreement with the record.
 
 ---
 
@@ -297,8 +371,11 @@ personal ones. We are all trying to make AI agents safer.
 
 ## Researcher recognition
 
-Every accepted AVE record permanently credits the `researcher` field by
-name. Records are immutable once published — your attribution stays forever.
+Every accepted AVE record credits the original researcher by name in the
+`researcher` field. A published record is never deleted and its `ave_id`
+never changes. Its content can be corrected after publication (a score, a
+source, a mapping, or the credit itself when it named the wrong source),
+and every such correction is listed in CHANGELOG.md.
 
 ---
 

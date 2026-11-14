@@ -1,6 +1,6 @@
 {
   "ave_id": "AVE-2026-00074",
-  "schema_version": "1.1.0",
+  "schema_version": "1.3.0",
   "status": "active",
   "component_type": "skill",
   "title": "Reclaimable dead external anchor (GitHub owner, package, domain, or cloud subdomain) referenced by a skill",
@@ -36,6 +36,13 @@
   "trifecta_profile": {
     "requires": ["external_comms"]
   },
+  "security_boundary": "trust established at authoring/review time → trust required at every subsequent execution, with no mechanism re-checking the gap between them",
+  "missing_control": "no ongoing verification that an already-approved external anchor is still controlled by its original owner",
+  "vulnerability_rationale": {
+    "capability": "Skills reference external identities (GitHub owners, package names, domains) that were valid at authoring time.",
+    "vulnerability": "No periodic re-verification that a previously-valid external identity reference remains currently owned by the same party; trust is established once, at review time, and never rechecked against real-world ownership changes.",
+    "impact": "An attacker who registers the now-unclaimed name takes control of everything the skill points at, without a single byte of the skill's own committed content changing."
+  },
   "mitigation": {
     "strategy": ["verify_identity", "pin_integrity"],
     "enforcement_point": "static_scan",
@@ -61,7 +68,7 @@
   "researcher": "AIR Security",
   "researcher_url": "https://www.air.security",
   "published": "2026-08-07T00:00:00Z",
-  "last_updated": "2026-08-07T00:00:00Z",
+  "last_updated": "2026-10-31T00:00:00Z",
   "references": [
     {
       "tag": "repo-forensics dead-anchor scanner",
@@ -115,5 +122,15 @@
       "version": "2026",
       "read_date": "2026-08-23"
     }
-  }
+  },
+  "revisions": [
+    {
+      "date": "2026-09-28",
+      "field": "evidence_vantage",
+      "from": null,
+      "to": "substrate",
+      "reason_code": "declaration_added",
+      "reason": "Stamped in #299. The derived verification_basis moved from artifact_reconstructed to substrate_reconstructed as a result."
+    }
+  ]
 }
